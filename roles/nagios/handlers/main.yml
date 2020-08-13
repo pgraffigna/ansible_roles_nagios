@@ -1,0 +1,12 @@
+---
+- apache2_module:
+    name: cgi 
+    state: present
+  listen: servicios
+
+- name: Iniciar servicio Apache2
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes  
+  listen: servicios  
