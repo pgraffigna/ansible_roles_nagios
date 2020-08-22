@@ -79,6 +79,31 @@
     name: nagiosadmin
     password: "{{ password }}"
 
+- name: Crea el directorio para los archivos de configuración 
+  file:
+    path: "/usr/local/nagios/etc/objects/{{ carpeta_config }}"
+    state: directory
+    mode: 0775
+    owner: "{{ usuario }}"
+    group: "{{ usuario }}" 
+
+- name: Agrega linea en nagios.cfg 
+  lineinfile:
+    path: "/usr/local/nagios/etc/nagios.cfg"
+    line: "cfg_dir=/usr/local/nagios/etc/objects/{{ carpeta_config }}"
+    state: present
+
+- name: Copia archivos con lista de hosts
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/local/nagios/etc/objects/{{ carpeta_config }}"
+    owner: "{{ usuario }}"
+    group: "{{ usuario }}"
+    mode: 0775
+  with_items:
+    - hostgroups.cfg
+    - hosts.cfg
+          
 - name: Iniciar servicio Nagios
   service:
     name: nagios
