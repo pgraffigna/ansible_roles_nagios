@@ -1,5 +1,11 @@
 # ansible_nagios
 
-Playbook con configuración inicial para Servidor Nagios.
+Ansible Playbook para desplegar un Servidor Nagios + servicio postfix para enviar notificaciones.
 
 Testeado con Vagrant + Virtualbox
+
+---
+### roles
+
+- nagios
+- postfix

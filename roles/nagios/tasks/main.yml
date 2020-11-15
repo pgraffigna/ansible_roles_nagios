@@ -103,6 +103,7 @@
   with_items:
     - hostgroups.cfg
     - hosts.cfg
+    - contacts.cfg
           
 - name: Iniciar servicio Nagios
   service:

@@ -1,0 +1,36 @@
+---
+- name: Instalación de dependencias
+  apt:
+    name: ['postfix', 's-nail', 'libsasl2-2', 'ca-certificates', 'libsasl2-modules', 'mailutils']
+    state: latest
+    update_cache: yes
+
+- name: Insertar líneas al final del archivo
+  blockinfile:
+    path: "/etc/postfix/main.cf"
+    block: | 
+      relayhost = [smtp.gmail.com]:587
+      smtp_sasl_auth_enable = yes
+      smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+      smtp_sasl_security_options = noanonymous
+      smtp_tls_CAfile = /etc/postfix/cacert.pem
+      smtp_use_tls = yes
+
+- name: Editar lineas en archivo de configuracion 
+  lineinfile:
+    path: "/etc/postfix/sasl_passwd"
+    line: "{{ SMTP_USER }}"
+    mode: '0600'
+    create: yes
+
+- name: Encriptar credenciales
+  shell: "{{ item }}"
+  with_items:
+    - postmap /etc/postfix/sasl_passwd      
+    - chmod 600 /etc/postfix/sasl_passwd.db
+    - cp /etc/ssl/certs/thawte_Primary_Root_CA.pem /etc/postfix/cacert.pem
+
+- name: Recargar servicio postfix
+  service:
+    name: postfix
+    state: reloaded
