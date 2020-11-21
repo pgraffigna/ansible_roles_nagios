@@ -3,7 +3,6 @@
   apt:
     name: ['python-passlib', 'wget', 'build-essential', 'unzip', 'openssl', 'libssl-dev', 'apache2', 'php', 'libapache2-mod-php', 'php-gd', 'libgd-dev']
     state: latest
-    update_cache: yes
 
 - name: Configurar timezone para Buenos_Aires
   timezone:
@@ -103,8 +102,18 @@
   with_items:
     - hostgroups.cfg
     - hosts.cfg
+
+- name: Copia archivos con configuración para alertas
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/local/nagios/etc/objects/"
+    owner: "{{ usuario }}"
+    group: "{{ usuario }}"
+    mode: 0775
+  with_items:
     - contacts.cfg
-          
+    - commands.cfg
+
 - name: Iniciar servicio Nagios
   service:
     name: nagios
