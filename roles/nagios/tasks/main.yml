@@ -1,8 +1,10 @@
 ---
 - name: Instalación de dependencias
   apt:
-    name: ['python-passlib', 'wget', 'build-essential', 'unzip', 'openssl', 'libssl-dev', 'apache2', 'php', 'libapache2-mod-php', 'php-gd', 'libgd-dev']
+    name: ['python3-passlib', 'wget', 'build-essential', 'unzip', 'openssl', 'libssl-dev', 'apache2', 'php', 'libapache2-mod-php', 'php-gd', 'libgd-dev']
     state: latest
+    update_cache: yes
+    cache_valid_time: 3600
 
 - name: Configurar timezone para Buenos_Aires
   timezone:
@@ -103,7 +105,7 @@
     - hostgroups.cfg
     - hosts.cfg
 
-- name: Copia archivos con configuración para alertas
+- name: Copia archivo template para pnp4nagios
   copy:
     src: "{{ item }}"
     dest: "/usr/local/nagios/etc/objects/"
@@ -111,8 +113,7 @@
     group: "{{ usuario }}"
     mode: 0775
   with_items:
-    - contacts.cfg
-    - commands.cfg
+    - templates.cfg    
 
 - name: Iniciar servicio Nagios
   service:
