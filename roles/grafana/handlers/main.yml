@@ -1,0 +1,16 @@
+---
+- name: Iniciar servicio Apache2
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes  
+  listen: servicios_grafana  
+
+- name: Iniciar servicio grafana
+  service:
+    name: grafana-server
+    state: restarted
+    enabled: yes  
+  listen: servicios_grafana  
+
+    

@@ -1,0 +1,5 @@
+---
+usuario: nagios
+grupo: nagios
+version: 0.6.26
+input_file: /usr/local/pnp4nagios/lib/kohana/system/libraries/Input.php

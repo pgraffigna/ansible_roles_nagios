@@ -2,17 +2,25 @@
 - apache2_module:
     name: cgi 
     state: present
-  listen: servicios_nagios
+  listen: servicios_pnp
+
+- apache2_module:
+    name: rewrite
+    state: present
+  listen: servicios_pnp
 
 - name: Iniciar servicio Apache2
   service:
     name: apache2
     state: restarted
     enabled: yes  
-  listen: servicios_nagios  
+  listen: servicios_pnp
 
 - name: Iniciar servicio Nagios
   service:
     name: nagios
-    state: started
-    enabled: yes
+    state: restarted
+    enabled: yes  
+  listen: servicios_pnp  
+
+    

@@ -1,0 +1,118 @@
+---
+- name: Instalación de dependencias
+  apt:
+    name: ['rrdtool', 'librrds-perl', 'php-gd', 'php-xml']
+    state: latest
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Crea carpeta de trabajo para pnp4nagios
+  file:
+    path: "/tmp/pnp4nagios"
+    state: directory
+
+- name: Descargar pnp4nagios
+  unarchive:
+    src: "https://github.com/lingej/PNP4Nagios/archive/{{ version }}.tar.gz"
+    dest: "/tmp/pnp4nagios"
+    remote_src: yes
+    
+- name: Compilando pnp4nagios
+  shell: "{{ item }}"
+  with_items:
+      - "./configure --with-httpd-conf=/etc/apache2/sites-enabled --with-rrdtool=/usr/bin/rrdtool --with-nagios-user=nagios --with-nagios-group=nagcmd"
+      -  make all
+      -  make install
+      -  make install-webconf
+      -  make install-config
+      -  make install-init
+      -  make fullinstall
+  args:
+    chdir: "/tmp/pnp4nagios/pnp4nagios-{{ version }}/"    
+
+- name: Activando npcd
+  systemd:
+    name: npcd
+    enabled: yes
+    state: started
+
+- name: Modificando el archivo nagios.cfg
+  lineinfile: 
+    path: /usr/local/nagios/etc/nagios.cfg
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: yes
+  loop:
+    - { regexp: 'process_performance_data=0', line: 'process_performance_data=1'}
+    - { regexp: 'enable_environment_macros=0', line: 'enable_environment_macros=1'}
+
+- name: Inserta líneas al final del archivo nagios.cfg
+  blockinfile:
+    path: /usr/local/nagios/etc/nagios.cfg
+    block: | 
+      service_perfdata_file=/usr/local/pnp4nagios/var/service-perfdata
+      service_perfdata_file_template=DATATYPE::SERVICEPERFDATA\tTIMET::$TIMET$\tHOSTNAME::$HOSTNAME$\tSERVICEDESC::$SERVICEDESC$\tSERVICEPERFDATA::$SERVICEPERFDATA$\tSERVICECHECKCOMMAND::$SERVICECHECKCOMMAND$\tHOSTSTATE::$HOSTSTATE$\tHOSTSTATETYPE::$HOSTSTATETYPE$\tSERVICESTATE::$SERVICESTATE$\tSERVICESTATETYPE::$SERVICESTATETYPE$
+      service_perfdata_file_mode=a
+      service_perfdata_file_processing_interval=15
+      service_perfdata_file_processing_command=process-service-perfdata-file
+      #### 
+      host_perfdata_file=/usr/local/pnp4nagios/var/host-perfdata
+      host_perfdata_file_template=DATATYPE::HOSTPERFDATA\tTIMET::$TIMET$\tHOSTNAME::$HOSTNAME$\tHOSTPERFDATA::$HOSTPERFDATA$\tHOSTCHECKCOMMAND::$HOSTCHECKCOMMAND$\tHOSTSTATE::$HOSTSTATE$\tHOSTSTATETYPE::$HOSTSTATETYPE$
+      host_perfdata_file_mode=a
+      host_perfdata_file_processing_interval=15
+      host_perfdata_file_processing_command=process-host-perfdata-file
+    owner: "{{ usuario }}"
+    group: "{{ grupo }}"
+
+- name: Inserta líneas al final del archivo commands.cfg
+  blockinfile:
+    path: /usr/local/nagios/etc/objects/commands.cfg
+    block: | 
+      # PNP4Nagios
+      define command{
+           command_name    process-service-perfdata-file
+           command_line    /usr/local/pnp4nagios/libexec/process_perfdata.pl --bulk=/usr/local/pnp4nagios/var/service-perfdata
+      }
+
+      define command{
+            command_name    process-host-perfdata-file
+            command_line    /usr/local/pnp4nagios/libexec/process_perfdata.pl --bulk=/usr/local/pnp4nagios/var/host-perfdata
+      }
+    owner: "{{ usuario }}"
+    group: "{{ grupo }}"
+
+- name: Eliminar default php page (fix)
+  file:
+    path: /usr/local/pnp4nagios/share/install.php
+    state: absent
+
+- name: Cambiar permisos a archivo resource.cfg (fix)
+  file:
+    path: /usr/local/nagios/etc/resource.cfg
+    owner: "{{ usuario }}"
+    group: "{{ grupo }}"
+    mode: '0666'
+
+- name: Error en la funcion sizeof() (fix)
+  shell: sed -i 's:if(sizeof(\$pages:if(is_array(\$pages) \&\& sizeof(\$pages:' /usr/local/pnp4nagios/share/application/models/data.php
+  args:
+    warn: false
+
+- name: Modificando el archivo Input.php (fix)
+  shell: | 
+     sed -i 's/if (get_magic_quotes_runtime())/\/\/if (get_magic_quotes_runtime())/' "{{ input_file }}"
+     sed -i 's/set_magic_quotes_runtime(0)/\/\/set_magic_quotes_runtime(0)/' "{{ input_file }}"
+     sed -i 's/if (get_magic_quotes_gpc())/\/\/if (get_magic_quotes_gpc())}/' "{{ input_file }}"
+     sed -i 's/$this->magic_quotes_gpc = TRUE;/\/\/$this->magic_quotes_gpc = TRUE;}/' "{{ input_file }}"
+  args:
+    warn: false   
+  notify:
+    - servicios_pnp
+
+# web-access
+# http://192.168.121.11/pnp4nagios/
+
+# checkers
+# sudo /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg --> nagios conf
+# /tmp/pnp4nagios-0.6.26/scripts./verify_pnp_config_v2.pl -m bulk -c /usr/local/nagios/etc/nagios.cfg -p /usr/local/pnp4nagios/etc/ --> pnp4nagios check
+

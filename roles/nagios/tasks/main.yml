@@ -121,4 +121,4 @@
     state: started
     enabled: yes
   notify:
-    - servicios  
+    - servicios_nagios  

@@ -1,0 +1,3 @@
+---
+llave_grafana: https://packages.grafana.com/gpg.key
+api_url: https://github.com/lingej/pnp-metrics-api/raw/master/application/controller/api.php

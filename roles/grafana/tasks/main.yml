@@ -1,0 +1,51 @@
+---
+- name: Instalando de dependencias
+  apt:
+    name: ['apt-transport-https', 'software-properties-common', 'wget']
+    state: latest
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Importando llave
+  apt_key:
+    url: "{{ llave_grafana }}"
+    state: present    
+
+- name: Agregando repo
+  apt_repository:
+    repo: deb https://packages.grafana.com/enterprise/deb stable main
+    state: present
+    update_cache: yes    
+
+- name: Instalando de dependencias
+  apt:
+    name: ['grafana-enterprise']
+    state: latest
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Activando servicio grafana 
+  systemd:
+    name: grafana-server
+    enabled: yes
+    state: started
+
+- name: Instalando plugins grafana 
+  grafana_plugin:
+    name: sni-pnp-datasource
+    version: latest
+    state: present
+
+- name: Descargando api 
+  get_url:
+    url: "{{ api_url }}"
+    dest: /usr/local/pnp4nagios/share/application/controllers/api.php
+    mode: '0644'
+
+- name: Configurando permisos para acceder al panel pnp4nagios 
+  shell: sed -i 's/Require valid-user/Require ip 127.0.0.1 ::1/' /etc/apache2/sites-enabled/pnp4nagios.conf
+  args:
+    warn: false
+  notify: servicios_grafana
+
+
