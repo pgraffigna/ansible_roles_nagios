@@ -3,9 +3,7 @@
   apt:
     name: ['apt-transport-https', 'software-properties-common', 'wget']
     state: latest
-    update_cache: yes
-    cache_valid_time: 3600
-
+    
 - name: Importando llave
   apt_key:
     url: "{{ llave_grafana }}"
@@ -14,15 +12,13 @@
 - name: Agregando repo
   apt_repository:
     repo: deb https://packages.grafana.com/enterprise/deb stable main
-    state: present
-    update_cache: yes    
+    state: present    
 
 - name: Instalando de dependencias
   apt:
     name: ['grafana-enterprise']
     state: latest
     update_cache: yes
-    cache_valid_time: 3600
 
 - name: Activando servicio grafana 
   systemd:
@@ -42,10 +38,13 @@
     dest: /usr/local/pnp4nagios/share/application/controllers/api.php
     mode: '0644'
 
-- name: Configurando permisos para acceder al panel pnp4nagios 
-  shell: sed -i 's/Require valid-user/Require ip 127.0.0.1 ::1/' /etc/apache2/sites-enabled/pnp4nagios.conf
-  args:
-    warn: false
+- name: Configurando permisos para acceder al panel pnp4nagios
+  lineinfile:
+    dest: /etc/apache2/sites-enabled/pnp4nagios.conf
+    insertafter: 'Require valid-user'
+    regexp: '^Require valid-user'
+    line: "\tRequire ip 127.0.0.1 ::1"
+    state: present
   notify: servicios_grafana
-
-
+ 
+ 

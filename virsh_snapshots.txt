@@ -1,0 +1,11 @@
+# tomar un snapshot
+virsh snapshot-create-as --domain {VM-NAME} --name {SNAPSHOT-NAME} --description "Snapshot" 
+
+# listar snapshots
+virsh snapshot-list --domain {VM-NAME}
+
+# restaurar un snapshot
+virsh snapshot-revert --domain {VM-NAME} --snapshotname {SNAPSHOT-NAME} --running
+
+# eliminar snapshot
+virsh snapshot-delete --domain {VM-NAME} --snapshotname {SNAPSHOT-NAME}
