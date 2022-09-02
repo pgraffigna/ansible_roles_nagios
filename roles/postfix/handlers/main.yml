@@ -1,0 +1,6 @@
+---
+- name: reiniciar_servicio
+  service:
+    name: postfix
+    state: reloaded
+    enabled: yes

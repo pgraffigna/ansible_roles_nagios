@@ -1,8 +1,20 @@
 ---
+- include_vars: ../../vars_main.yml
+
 - name: Instalación de dependencias
   apt:
-    name: ['python3-passlib', 'wget', 'build-essential', 'unzip', 'openssl', 'libssl-dev', 'apache2', 'php', 'libapache2-mod-php', 'php-gd', 'libgd-dev']
-    state: latest
+    name:
+      - python3-passlib
+      - wget
+      - build-essential
+      - unzip
+      - openssl
+      - libssl-dev
+      - apache2
+      - php
+      - libapache2-mod-php
+      - php-gd
+      - libgd-dev
     update_cache: yes
     cache_valid_time: 3600
 
@@ -21,8 +33,8 @@
     password: "{{ password | password_hash('sha512') }}"
     groups: "{{ grupo }}"
     shell: /bin/bash
-    update_password: on_create       
-    
+    update_password: on_create
+
 - name: Agregar el usuario www-data al grupo nagcmd
   user:
     name: "{{ apache }}"
@@ -31,20 +43,19 @@
 
 - name: Descargar Nagios
   get_url:
-    url: "https://assets.nagios.com/downloads/nagioscore/releases/nagios-{{ version }}.tar.gz"
-    dest: "/tmp/nagios-{{ version }}.tar.gz"
+    url: "https://assets.nagios.com/downloads/nagioscore/releases/nagios-{{ version_nagios }}.tar.gz"
+    dest: "/tmp/nagios-{{ version_nagios }}.tar.gz"
 
-- name: Descargar plugins para Nagios 
+- name: Descargar plugins para Nagios
   get_url:
     url: "https://nagios-plugins.org/download/nagios-plugins-{{ version_plugins }}.tar.gz"
     dest: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz"
-    
 
 - name: Descomprimir archivos
   unarchive:
-    src: "/tmp/nagios-{{ version }}.tar.gz"
+    src: "/tmp/nagios-{{ version_nagios }}.tar.gz"
     dest: /tmp/
-    remote_src: yes  
+    remote_src: yes
 
 - name: Descomprimir plugins
   unarchive:
@@ -55,20 +66,20 @@
 - name: Configurar Nagios
   shell: "{{ item }}"
   with_items:
-    - "./configure -with-command-group={{ grupo }}"      
+    - "./configure -with-command-group={{ grupo }}"
     - make all
     - make install
     - make install-init
     - make install-commandmode
     - make install-config
-    - make install-webconf     
+    - make install-webconf
   args:
-    chdir: "/tmp/nagios-{{ version }}/"
+    chdir: "/tmp/nagios-{{ version_nagios }}/"
 
 - name: Configurar plugins
   shell: "{{ item }}"
   with_items:
-    - "./configure --with-nagios-user={{ usuario }} --with-nagios-group={{ usuario }}"      
+    - "./configure --with-nagios-user={{ usuario }} --with-nagios-group={{ usuario }}"
     - make
     - make install
   args:
@@ -80,15 +91,15 @@
     name: nagiosadmin
     password: "{{ password }}"
 
-- name: Crea el directorio para los archivos de configuración 
+- name: Crea el directorio para los archivos de configuración
   file:
     path: "/usr/local/nagios/etc/objects/{{ carpeta_config }}"
     state: directory
     mode: 0775
     owner: "{{ usuario }}"
-    group: "{{ usuario }}" 
+    group: "{{ usuario }}"
 
-- name: Agrega linea en nagios.cfg 
+- name: Agrega linea en nagios.cfg
   lineinfile:
     path: "/usr/local/nagios/etc/nagios.cfg"
     line: "cfg_dir=/usr/local/nagios/etc/objects/{{ carpeta_config }}"
@@ -113,7 +124,7 @@
     group: "{{ usuario }}"
     mode: 0775
   with_items:
-    - templates.cfg    
+    - templates.cfg
 
 - name: Iniciar servicio Nagios
   service:
@@ -121,4 +132,4 @@
     state: started
     enabled: yes
   notify:
-    - servicios_nagios  
+    - servicios_nagios

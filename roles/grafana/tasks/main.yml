@@ -1,40 +1,45 @@
 ---
-- name: Instalando de dependencias
+- include_vars: ../../vars_main.yml
+
+- name: Instalacion de dependencias
   apt:
-    name: ['apt-transport-https', 'software-properties-common', 'wget']
-    state: latest
-    
+    name:
+      - apt-transport-https
+      - software-properties-common
+      - wget
+    update_cache: yes
+    cache_valid_time: 3600
+
 - name: Importando llave
   apt_key:
     url: "{{ llave_grafana }}"
-    state: present    
+    state: present
 
 - name: Agregando repo
   apt_repository:
     repo: deb https://packages.grafana.com/enterprise/deb stable main
-    state: present    
+    state: present
 
-- name: Instalando de dependencias
+- name: Instalacion de dependencias
   apt:
-    name: ['grafana-enterprise']
-    state: latest
+    name: grafana-enterprise
     update_cache: yes
 
-- name: Activando servicio grafana 
+- name: Activando servicio grafana
   systemd:
     name: grafana-server
     enabled: yes
     state: started
 
-- name: Instalando plugins grafana 
+- name: Instalando plugins grafana
   grafana_plugin:
     name: sni-pnp-datasource
     version: latest
     state: present
 
-- name: Descargando api 
+- name: Descargando api
   get_url:
-    url: "{{ api_url }}"
+    url: "{{ api_url_grafana }}"
     dest: /usr/local/pnp4nagios/share/application/controllers/api.php
     mode: '0644'
 
@@ -46,5 +51,5 @@
     line: "\tRequire ip 127.0.0.1 ::1"
     state: present
   notify: servicios_grafana
- 
- 
+
+

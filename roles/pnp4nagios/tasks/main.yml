@@ -1,8 +1,13 @@
 ---
+- include_vars: ../../vars_main.yml
+
 - name: Instalación de dependencias
   apt:
-    name: ['rrdtool', 'librrds-perl', 'php-gd', 'php-xml']
-    state: latest
+    name:
+      - rrdtool
+      - librrds-perl
+      - php-gd
+      - php-xml
     update_cache: yes
     cache_valid_time: 3600
 
@@ -13,10 +18,10 @@
 
 - name: Descargar pnp4nagios
   unarchive:
-    src: "https://github.com/lingej/PNP4Nagios/archive/{{ version }}.tar.gz"
+    src: "https://github.com/lingej/PNP4Nagios/archive/{{ version_pnp }}.tar.gz"
     dest: "/tmp/pnp4nagios"
     remote_src: yes
-    
+
 - name: Compilando pnp4nagios
   shell: "{{ item }}"
   with_items:
@@ -28,7 +33,7 @@
       -  make install-init
       -  make fullinstall
   args:
-    chdir: "/tmp/pnp4nagios/pnp4nagios-{{ version }}/"    
+    chdir: "/tmp/pnp4nagios/pnp4nagios-{{ version_pnp }}/"
 
 - name: Activando npcd
   systemd:
@@ -37,7 +42,7 @@
     state: started
 
 - name: Modificando el archivo nagios.cfg
-  lineinfile: 
+  lineinfile:
     path: /usr/local/nagios/etc/nagios.cfg
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
@@ -49,37 +54,37 @@
 - name: Inserta líneas al final del archivo nagios.cfg
   blockinfile:
     path: /usr/local/nagios/etc/nagios.cfg
-    block: | 
+    block: |
       service_perfdata_file=/usr/local/pnp4nagios/var/service-perfdata
       service_perfdata_file_template=DATATYPE::SERVICEPERFDATA\tTIMET::$TIMET$\tHOSTNAME::$HOSTNAME$\tSERVICEDESC::$SERVICEDESC$\tSERVICEPERFDATA::$SERVICEPERFDATA$\tSERVICECHECKCOMMAND::$SERVICECHECKCOMMAND$\tHOSTSTATE::$HOSTSTATE$\tHOSTSTATETYPE::$HOSTSTATETYPE$\tSERVICESTATE::$SERVICESTATE$\tSERVICESTATETYPE::$SERVICESTATETYPE$
       service_perfdata_file_mode=a
       service_perfdata_file_processing_interval=15
       service_perfdata_file_processing_command=process-service-perfdata-file
-      #### 
+      ####
       host_perfdata_file=/usr/local/pnp4nagios/var/host-perfdata
       host_perfdata_file_template=DATATYPE::HOSTPERFDATA\tTIMET::$TIMET$\tHOSTNAME::$HOSTNAME$\tHOSTPERFDATA::$HOSTPERFDATA$\tHOSTCHECKCOMMAND::$HOSTCHECKCOMMAND$\tHOSTSTATE::$HOSTSTATE$\tHOSTSTATETYPE::$HOSTSTATETYPE$
       host_perfdata_file_mode=a
       host_perfdata_file_processing_interval=15
       host_perfdata_file_processing_command=process-host-perfdata-file
     owner: "{{ usuario }}"
-    group: "{{ grupo }}"
+    group: "{{ usuario }}"
 
 - name: Inserta líneas al final del archivo commands.cfg
   blockinfile:
     path: /usr/local/nagios/etc/objects/commands.cfg
-    block: | 
+    block: |
       # PNP4Nagios
       define command{
-           command_name    process-service-perfdata-file
-           command_line    /usr/local/pnp4nagios/libexec/process_perfdata.pl --bulk=/usr/local/pnp4nagios/var/service-perfdata
+          command_name    process-service-perfdata-file
+          command_line    /usr/local/pnp4nagios/libexec/process_perfdata.pl --bulk=/usr/local/pnp4nagios/var/service-perfdata
       }
 
       define command{
-            command_name    process-host-perfdata-file
-            command_line    /usr/local/pnp4nagios/libexec/process_perfdata.pl --bulk=/usr/local/pnp4nagios/var/host-perfdata
+          command_name    process-host-perfdata-file
+          command_line    /usr/local/pnp4nagios/libexec/process_perfdata.pl --bulk=/usr/local/pnp4nagios/var/host-perfdata
       }
     owner: "{{ usuario }}"
-    group: "{{ grupo }}"
+    group: "{{ usuario }}"
 
 - name: Eliminar default php page (fix)
   file:
@@ -90,22 +95,22 @@
   file:
     path: /usr/local/nagios/etc/resource.cfg
     owner: "{{ usuario }}"
-    group: "{{ grupo }}"
+    group: "{{ usuario }}"
     mode: '0666'
 
 - name: Error en la funcion sizeof() (fix)
   shell: sed -i 's:if(sizeof(\$pages:if(is_array(\$pages) \&\& sizeof(\$pages:' /usr/local/pnp4nagios/share/application/models/data.php
   args:
-    warn: false
+    warn: no
 
 - name: Modificando el archivo Input.php (fix)
-  shell: | 
-     sed -i 's/if (get_magic_quotes_runtime())/\/\/if (get_magic_quotes_runtime())/' "{{ input_file }}"
-     sed -i 's/set_magic_quotes_runtime(0)/\/\/set_magic_quotes_runtime(0)/' "{{ input_file }}"
-     sed -i 's/if (get_magic_quotes_gpc())/\/\/if (get_magic_quotes_gpc())}/' "{{ input_file }}"
-     sed -i 's/$this->magic_quotes_gpc = TRUE;/\/\/$this->magic_quotes_gpc = TRUE;}/' "{{ input_file }}"
+  shell: |
+    sed -i 's/if (get_magic_quotes_runtime())/\/\/if (get_magic_quotes_runtime())/' "{{ input_file }}"
+    sed -i 's/set_magic_quotes_runtime(0)/\/\/set_magic_quotes_runtime(0)/' "{{ input_file }}"
+    sed -i 's/if (get_magic_quotes_gpc())/\/\/if (get_magic_quotes_gpc())}/' "{{ input_file }}"
+    sed -i 's/$this->magic_quotes_gpc = TRUE;/\/\/$this->magic_quotes_gpc = TRUE;}/' "{{ input_file }}"
   args:
-    warn: false   
+    warn: no
   notify:
     - servicios_pnp
 

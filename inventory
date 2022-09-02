@@ -1,5 +1,5 @@
 [nagios]
-192.168.121.138
+192.168.121.254
 
 [nagios:vars]
 ansible_ssh_user=vagrant

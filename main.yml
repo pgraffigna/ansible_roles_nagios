@@ -3,6 +3,7 @@
   become: yes
 
   roles:
-    - nagios 
+    - nagios
     - pnp4nagios
     - grafana
+    - postfix

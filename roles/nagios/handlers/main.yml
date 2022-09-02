@@ -1,6 +1,6 @@
 ---
 - apache2_module:
-    name: cgi 
+    name: cgi
     state: present
   listen: servicios_nagios
 
@@ -8,11 +8,12 @@
   service:
     name: apache2
     state: restarted
-    enabled: yes  
-  listen: servicios_nagios  
+    enabled: yes
+  listen: servicios_nagios
 
 - name: Iniciar servicio Nagios
   service:
     name: nagios
     state: started
     enabled: yes
+  listen: servicios_nagios

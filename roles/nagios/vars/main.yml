@@ -1,8 +1,0 @@
----
-usuario: nagios
-grupo: nagcmd
-apache: www-data
-password: PASSWORD
-version: 4.4.5
-version_plugins: 2.3.2
-carpeta_config: hosts

@@ -1,0 +1,12 @@
+llave_grafana: https://packages.grafana.com/gpg.key
+api_url_grafana: https://github.com/lingej/pnp-metrics-api/raw/master/application/controller/api.php
+usuario: nagios
+grupo: nagcmd
+apache: www-data
+password: PASSWORD
+version_nagios: 4.4.5
+version_plugins: 2.3.2
+carpeta_config: hosts
+version_pnp: 0.6.26
+input_file: /usr/local/pnp4nagios/lib/kohana/system/libraries/Input.php
+smtp_user: "[smtp.gmail.com]:587 USUARIO:PASS" 
