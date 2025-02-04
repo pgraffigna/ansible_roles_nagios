@@ -1,49 +1,47 @@
 ---
-- include_vars: ../../vars_main.yml
+- include_vars: vars_main.yml
 
-- name: Instalacion de dependencias
-  apt:
-    name:
-      - apt-transport-https
-      - software-properties-common
-      - wget
-    update_cache: yes
+- name: Instalar dependencias
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    update_cache: true
     cache_valid_time: 3600
+  with_items: "{{ grafana_packages }}"
 
-- name: Importando llave
-  apt_key:
+- name: Importar llave
+  ansible.builtin.apt_key:
     url: "{{ llave_grafana }}"
     state: present
 
-- name: Agregando repo
-  apt_repository:
-    repo: deb https://packages.grafana.com/enterprise/deb stable main
+- name: Agregar repo
+  ansible.builtin.apt_repository:
+    repo: "deb {{ repo_grafana }} stable main"
     state: present
 
-- name: Instalacion de dependencias
-  apt:
+- name: Instalar dependencias
+  ansible.builtin.apt:
     name: grafana-enterprise
-    update_cache: yes
+    update_cache: true
 
-- name: Activando servicio grafana
-  systemd:
+- name: Activar servicio grafana
+  ansible.builtin.systemd:
     name: grafana-server
-    enabled: yes
+    enabled: true
     state: started
 
-- name: Instalando plugins grafana
-  grafana_plugin:
+- name: Instalar plugins grafana
+  ansible.builtin.grafana_plugin:
     name: sni-pnp-datasource
     version: latest
     state: present
 
-- name: Descargando api
+- name: Descargar api
   get_url:
-    url: "{{ api_url_grafana }}"
+    url: "{{ api_grafana }}"
     dest: /usr/local/pnp4nagios/share/application/controllers/api.php
-    mode: '0644'
+    mode: 0644
 
-- name: Configurando permisos para acceder al panel pnp4nagios
+- name: Configurar pnp4nagios
   lineinfile:
     dest: /etc/apache2/sites-enabled/pnp4nagios.conf
     insertafter: 'Require valid-user'

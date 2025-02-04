@@ -1,0 +1,1 @@
+grafana_packages: [ 'apt-transport-https', 'software-properties-common', 'wget' ]

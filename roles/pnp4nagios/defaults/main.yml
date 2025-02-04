@@ -1,0 +1,1 @@
+pnp4nagios_packages: [ 'rrdtool', 'librrds-perl', 'php-gd', 'php-xml' ]

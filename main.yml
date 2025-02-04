@@ -1,9 +1,8 @@
 ---
 - hosts: nagios
-  become: yes
+  become: true
 
   roles:
     - nagios
     - pnp4nagios
     - grafana
-    - postfix

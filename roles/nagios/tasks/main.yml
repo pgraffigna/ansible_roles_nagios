@@ -1,33 +1,23 @@
 ---
-- include_vars: ../../vars_main.yml
+- include_vars: vars_main.yml
 
-- name: Instalación de dependencias
+- name: Instalar dependencias
   apt:
-    name:
-      - python3-passlib
-      - wget
-      - build-essential
-      - unzip
-      - openssl
-      - libssl-dev
-      - apache2
-      - php
-      - libapache2-mod-php
-      - php-gd
-      - libgd-dev
-    update_cache: yes
+    name: "{{ item }}"
+    update_cache: true
     cache_valid_time: 3600
+  with_items: "{{ nagios_packages }}"
 
-- name: Configurar timezone para Buenos_Aires
+- name: Configurar timezone
   timezone:
     name: America/Argentina/Buenos_Aires
 
-- name: Crear grupo nagcmd
+- name: Crear grupo
   group:
     name: "{{ grupo }}"
     state: present
 
-- name: Crear usuario nagios
+- name: Crear usuario
   user:
     name: "{{ usuario }}"
     password: "{{ password | password_hash('sha512') }}"
@@ -35,33 +25,55 @@
     shell: /bin/bash
     update_password: on_create
 
-- name: Agregar el usuario www-data al grupo nagcmd
+- name: Agregar el usuario al grupo
   user:
     name: "{{ apache }}"
     groups: "{{ grupo }}"
     state: present
 
-- name: Descargar Nagios
+# - name: Descargar y descomprimir Nagios y plugins
+#   ansible.builtin.unarchive:
+#     src: "{{ item.src }}"
+#     dest: /tmp/
+#     remote_src: true
+#     url: "{{ item.url }}"
+#   loop:
+#     - { src: "/tmp/nagios-{{ version_nagios }}.tar.gz", url: "https://assets.nagios.com/downloads/nagioscore/releases/nagios-{{ version_nagios }}.tar.gz" }
+#     - { src: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz", url: "https://nagios-plugins.org/download/nagios-plugins-{{ version_plugins }}.tar.gz" }
+
+- name: Descargar Nagios y plugins
   get_url:
-    url: "https://assets.nagios.com/downloads/nagioscore/releases/nagios-{{ version_nagios }}.tar.gz"
-    dest: "/tmp/nagios-{{ version_nagios }}.tar.gz"
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - { url: "https://assets.nagios.com/downloads/nagioscore/releases/nagios-{{ version_nagios }}.tar.gz", dest: "/tmp/nagios-{{ version_nagios }}.tar.gz" }
+    - { url: "https://nagios-plugins.org/download/nagios-plugins-{{ version_plugins }}.tar.gz", dest: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz" }
 
-- name: Descargar plugins para Nagios
-  get_url:
-    url: "https://nagios-plugins.org/download/nagios-plugins-{{ version_plugins }}.tar.gz"
-    dest: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz"
+# - name: Descargar plugins para Nagios
+#   get_url:
+#     url: "https://nagios-plugins.org/download/nagios-plugins-{{ version_plugins }}.tar.gz"
+#     dest: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz"
 
-- name: Descomprimir archivos
-  unarchive:
-    src: "/tmp/nagios-{{ version_nagios }}.tar.gz"
-    dest: /tmp/
-    remote_src: yes
+# - name: Descomprimir archivos
+#   unarchive:
+#     src: "/tmp/nagios-{{ version_nagios }}.tar.gz"
+#     dest: /tmp/
+#     remote_src: true
 
-- name: Descomprimir plugins
-  unarchive:
-    src: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz"
-    dest: /tmp/
-    remote_src: yes
+# - name: Descomprimir plugins
+#   unarchive:
+#     src: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz"
+#     dest: /tmp/
+#     remote_src: true
+
+- name: Descomprimir nagios y plugins
+  ansible.builtin.unarchive:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: true
+  loop:
+    - { src: "/tmp/nagios-{{ version_nagios }}.tar.gz", dest: "/tmp/" }
+    - { src: "/tmp/nagios-plugins-{{ version_plugins }}.tar.gz", dest: "/tmp/" }
 
 - name: Configurar Nagios
   shell: "{{ item }}"
@@ -85,30 +97,30 @@
   args:
     chdir: "/tmp/nagios-plugins-{{ version_plugins }}"
 
-- name: Configurar contraseña para el usuario web
+- name: Configurar nagiosadmin
   htpasswd:
     path: /usr/local/nagios/etc/htpasswd.users
     name: nagiosadmin
     password: "{{ password }}"
 
-- name: Crea el directorio para los archivos de configuración
+- name: Crear directorio
   file:
-    path: "/usr/local/nagios/etc/objects/{{ carpeta_config }}"
+    path: "/usr/local/nagios/etc/objects/{{ servers }}"
     state: directory
     mode: 0775
     owner: "{{ usuario }}"
     group: "{{ usuario }}"
 
-- name: Agrega linea en nagios.cfg
+- name: Configurar nagios
   lineinfile:
     path: "/usr/local/nagios/etc/nagios.cfg"
-    line: "cfg_dir=/usr/local/nagios/etc/objects/{{ carpeta_config }}"
+    line: "cfg_dir=/usr/local/nagios/etc/objects/{{ servers }}"
     state: present
 
-- name: Copia archivos con lista de hosts
+- name: Copiar archivos
   copy:
     src: "{{ item }}"
-    dest: "/usr/local/nagios/etc/objects/{{ carpeta_config }}"
+    dest: "/usr/local/nagios/etc/objects/{{ servers }}"
     owner: "{{ usuario }}"
     group: "{{ usuario }}"
     mode: 0775
@@ -116,7 +128,7 @@
     - hostgroups.cfg
     - hosts.cfg
 
-- name: Copia archivo template para pnp4nagios
+- name: Copiar template
   copy:
     src: "{{ item }}"
     dest: "/usr/local/nagios/etc/objects/"
@@ -126,10 +138,10 @@
   with_items:
     - templates.cfg
 
-- name: Iniciar servicio Nagios
+- name: Iniciar servicio
   service:
     name: nagios
     state: started
-    enabled: yes
+    enabled: true
   notify:
     - servicios_nagios

@@ -3,12 +3,12 @@
   service:
     name: apache2
     state: restarted
-    enabled: yes
+    enabled: true
   listen: servicios_grafana
 
 - name: Iniciar servicio grafana
   service:
     name: grafana-server
     state: restarted
-    enabled: yes
+    enabled: true
   listen: servicios_grafana

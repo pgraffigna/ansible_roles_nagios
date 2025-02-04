@@ -1,17 +1,14 @@
 ---
-- include_vars: ../../vars_main.yml
+- include_vars: vars_main.yml
 
 - name: Instalación de dependencias
   apt:
-    name:
-      - rrdtool
-      - librrds-perl
-      - php-gd
-      - php-xml
-    update_cache: yes
+    name: "{{ item }}"
+    update_cache: true
     cache_valid_time: 3600
+  with_items: "{{ pnp4nagios_packages }}"
 
-- name: Crea carpeta de trabajo para pnp4nagios
+- name: Crear carpeta
   file:
     path: "/tmp/pnp4nagios"
     state: directory
@@ -20,9 +17,9 @@
   unarchive:
     src: "https://github.com/lingej/PNP4Nagios/archive/{{ version_pnp }}.tar.gz"
     dest: "/tmp/pnp4nagios"
-    remote_src: yes
+    remote_src: true
 
-- name: Compilando pnp4nagios
+- name: Compilar pnp4nagios
   shell: "{{ item }}"
   with_items:
       - "./configure --with-httpd-conf=/etc/apache2/sites-enabled --with-rrdtool=/usr/bin/rrdtool --with-nagios-user=nagios --with-nagios-group=nagcmd"
@@ -35,23 +32,23 @@
   args:
     chdir: "/tmp/pnp4nagios/pnp4nagios-{{ version_pnp }}/"
 
-- name: Activando npcd
+- name: Activar npcd
   systemd:
     name: npcd
-    enabled: yes
+    enabled: true
     state: started
 
-- name: Modificando el archivo nagios.cfg
+- name: Modificar el archivo
   lineinfile:
     path: /usr/local/nagios/etc/nagios.cfg
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
-    backup: yes
+    backup: true
   loop:
     - { regexp: 'process_performance_data=0', line: 'process_performance_data=1'}
     - { regexp: 'enable_environment_macros=0', line: 'enable_environment_macros=1'}
 
-- name: Inserta líneas al final del archivo nagios.cfg
+- name: Insertar líneas en nagios.cfg
   blockinfile:
     path: /usr/local/nagios/etc/nagios.cfg
     block: |
@@ -69,7 +66,7 @@
     owner: "{{ usuario }}"
     group: "{{ usuario }}"
 
-- name: Inserta líneas al final del archivo commands.cfg
+- name: Insertar líneas en commands.cfg
   blockinfile:
     path: /usr/local/nagios/etc/objects/commands.cfg
     block: |
@@ -86,24 +83,24 @@
     owner: "{{ usuario }}"
     group: "{{ usuario }}"
 
-- name: Eliminar default php page (fix)
+- name: Eliminar default php page
   file:
     path: /usr/local/pnp4nagios/share/install.php
     state: absent
 
-- name: Cambiar permisos a archivo resource.cfg (fix)
+- name: Cambiar permisos a archivo resource.cfg
   file:
     path: /usr/local/nagios/etc/resource.cfg
     owner: "{{ usuario }}"
     group: "{{ usuario }}"
     mode: '0666'
 
-- name: Error en la funcion sizeof() (fix)
+- name: Corregir funcion sizeof
   shell: sed -i 's:if(sizeof(\$pages:if(is_array(\$pages) \&\& sizeof(\$pages:' /usr/local/pnp4nagios/share/application/models/data.php
   args:
     warn: no
 
-- name: Modificando el archivo Input.php (fix)
+- name: Modificar el archivo input.php
   shell: |
     sed -i 's/if (get_magic_quotes_runtime())/\/\/if (get_magic_quotes_runtime())/' "{{ input_file }}"
     sed -i 's/set_magic_quotes_runtime(0)/\/\/set_magic_quotes_runtime(0)/' "{{ input_file }}"
@@ -111,11 +108,7 @@
     sed -i 's/$this->magic_quotes_gpc = TRUE;/\/\/$this->magic_quotes_gpc = TRUE;}/' "{{ input_file }}"
   args:
     warn: no
-  notify:
-    - servicios_pnp
-
-# web-access
-# http://192.168.121.11/pnp4nagios/
+  notify: servicios_pnp
 
 # checkers
 # sudo /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg --> nagios conf
